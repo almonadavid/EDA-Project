@@ -1,2 +1,2 @@
-# EDA-Project-1
+# EDA-Project
 Almona, Natalie, Oliver
