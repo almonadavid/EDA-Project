@@ -83,6 +83,12 @@ nhl_shots |>
   geom_text(aes(label = scales::percent(joint, accuracy = 0.01))) +
   scale_fill_gradient2()
 
+## Histogram shot angle
+nhl_shots |> 
+  ggplot(aes(x = shotAngle)) +
+  geom_histogram(binwidth = 1) +
+  geom_rug(aes(color = shotAngle), alpha = 0.2)
+
 # Question 2
 # Does handedness affect shooting effectiveness from different angles?
 
