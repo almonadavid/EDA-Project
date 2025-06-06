@@ -56,7 +56,23 @@ nhl_goals_reg_period_team<- nhl_goals_reg|>
 
 # Looking at who were the best shooters by SOG%
 
-nhl_shots_reg<- nhl_shots|>
-  filter(period %in% c(1, 2, 3))
+nhl_goals_5v5<- nhl_goals|>
+  filter(period %in% c(1, 2, 3))|>
+  filter(shotOnEmptyNet==0)
 
-class(nhl_shots_reg$event)
+nhl_goals_5v5|>
+  select(event, period)|>
+  ggplot(aes(period))+
+  geom_bar()
+
+nhl_goals_5v5_period_team<- nhl_goals_reg|>
+  select(event, period, teamCode)|>
+  count(period, teamCode) |>
+  group_by(period)|>
+  mutate(prop=n/sum(n))|>
+  select(period, teamCode, prop)|>
+  pivot_wider(names_from=teamCode, values_from=prop)|>
+  ungroup()|>
+  mutate(total=rowSums(across(-period)))
+
+
