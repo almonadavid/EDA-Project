@@ -196,3 +196,10 @@ nhl_shots |>
     y = "Shot Distance (feet)"
   ) +
   theme_minimal()
+
+
+library(sportyR)
+
+geom_hockey(league = "NHL") +
+  geom_point(data = subset(nhl_shots, event == "GOAL" & shotOnEmptyNet == 0), 
+             aes(x = arenaAdjustedXCord, y = arenaAdjustedYCord))
