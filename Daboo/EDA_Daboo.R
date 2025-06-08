@@ -54,7 +54,7 @@ nhl_goals_reg_period_team<- nhl_goals_reg|>
   ungroup()|>
   mutate(total=rowSums(across(-period)))
 
-# Looking at who were the best shooters by SOG%
+
 
 nhl_goals_5v5<- nhl_goals|>
   filter(period %in% c(1, 2, 3))|>
@@ -65,6 +65,7 @@ nhl_goals_5v5|>
   ggplot(aes(period))+
   geom_bar()
 
+# proportion of goals by each team in each period
 nhl_goals_5v5_period_team<- nhl_goals_reg|>
   select(event, period, teamCode)|>
   count(period, teamCode) |>
@@ -75,4 +76,41 @@ nhl_goals_5v5_period_team<- nhl_goals_reg|>
   ungroup()|>
   mutate(total=rowSums(across(-period)))
 
+# Looking at who were the best shooters by SOG%
+nhl_shots_5v5<- nhl_shots |>
+  filter(shotOnEmptyNet==0)
+names(nhl_shots)
 
+# filtering out empty net shots
+nhl_shots_5v5 <- nhl_shots |>
+  filter(shotOnEmptyNet == 0)
+
+# calculating a players sog_pct of players who took at least 20 shots
+sog_stats<-nhl_shots_5v5|>
+  group_by(shooterName)|>
+  summarise(total_shots=n(),
+            shots_on_goal=sum(shotWasOnGoal==1, na.rm=TRUE),
+            sog_pct=shots_on_goal/total_shots)|>
+  filter(total_shots>=20)
+
+# top 10 players only by sog_pct
+sog_stats|>
+  slice_max(sog_pct, n=10)
+
+# worst 10 players by sog_pct
+sog_stats|>
+  slice_min(sog_pct, n=10)
+
+# finding top 10 in sog_pct but giving weight to taking more shots
+sog_stats|>
+  mutate(weighted_score=sog_pct * log(total_shots))|>
+  arrange(desc(weighted_score))
+
+# finding the bottom 10 in sog_pct but giving weight to taking more shots
+sog_stats|>
+  mutate(weighted_score=sog_pct * log(total_shots))|>
+  arrange(weighted_score)
+
+sog_stats|>
+  mutate(weighted_score=sog_pct * sqrt(total_shots))|>
+  arrange(desc(weighted_score))
