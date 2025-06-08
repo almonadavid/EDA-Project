@@ -144,6 +144,30 @@ nhl_shots |>
 
 
 ## Shots made vs Shot Conceded (color by playoffs)
+nhl_shots |>
+  group_by(game_id, homeTeamCode, awayTeamCode, isHomeTeam) |>
+  summarise(shots = n(), .groups = "drop") |>
+  pivot_wider(
+    names_from = isHomeTeam,
+    values_from = shots,
+    names_prefix = "shots_") |>
+  rename(homeShots = shots_1,
+         awayShots = shots_0) |> 
+  select(game_id, homeTeamCode, awayTeamCode, homeShots, awayShots) |>
+  group_by(homeTeamCode) |> 
+  summarise(shotsMade = sum(homeShots, na.rm = TRUE),
+            shotsConceded = sum(awayShots, na.rm = TRUE)) |> 
+  rename(Team = homeTeamCode) |> 
+  mutate(
+    madeplayoffs = ifelse(Team %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
+  ggplot(aes(x = shotsMade, y = shotsConceded)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dotted") +
+  geom_label(aes(label = Team, color = madeplayoffs)) +
+  scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
+  theme_light()
 
 
 
