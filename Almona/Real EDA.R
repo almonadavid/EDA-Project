@@ -18,76 +18,13 @@ nhl_shots |>
   mutate(prop = n/sum(n)) |>
   ggplot(aes(x = shooterLeftRight, y = prop)) +
   geom_col(fill = "blue") +
-  coord_flip() +
-  labs(y = "prop")
-  # geom_label(aes(label = round(prop*100,2), hjust = 1))
-#   
-# chisq.test(table(nhl_shots$shooterLeftRight))
-# 
-# 
-# test <- nhl_shots |> 
-#   filter(!is.na(shotType)) |> 
-#   mutate(shotSector = case_when( #grouping shot angles
-#     shotAngle > 60 ~ 1,   # far left
-#     shotAngle >= -60 & shotAngle <= 60 ~ 2,  # center
-#     shotAngle < -60 ~ 3   # far right
-#   )) 
-# 
-# table("Shot Sector" = test$shotSector,
-#       "Shot Type" = test$shotType)
-# 
-# ## Heatmap of shotType & shotSector
-# nhl_shots |> 
-#   filter(!is.na(shotType)) |> 
-#   mutate(shotSector = cut(
-#     shotAngle,
-#     breaks = seq(-90, 90, by = 30), # 6 bins
-#     include.lowest = TRUE,
-#     labels = c("Far Right", "Right Wing", "Right-Center", "Left-Center", "Left Wing", "Far Left")
-#   )) |> 
-#   group_by(shotSector, shotType) |> 
-#   summarize(freq = n(),
-#             joint = n()/nrow(nhl_shots)) |> 
-#   ggplot(aes(x = shotSector, y = shotType)) +
-#   geom_tile(aes(fill = freq), color = "white") +
-#   geom_text(aes(label = scales::percent(joint, accuracy = 0.01))) +
-#   scale_fill_gradient2()
-#   
-# 
-# ## Heatmap of Event & shotSector
-# nhl_shots |> 
-#   # filter(!is.na(shotType)) |> 
-#   mutate(shotSector = cut(
-#     shotAngle,
-#     breaks = seq(-90, 90, by = 30), # 6 bins
-#     include.lowest = TRUE,
-#     labels = c("Far Right", "Right Wing", "Right-Center", "Left-Center", "Left Wing", "Far Left")
-#   )) |> 
-#   group_by(shotSector, event) |> 
-#   summarize(freq = n(),
-#             joint = n()/nrow(nhl_shots)) |> 
-#   ggplot(aes(x = shotSector, y = event)) +
-#   geom_tile(aes(fill = freq), color = "white") +
-#   geom_text(aes(label = scales::percent(joint, accuracy = 0.01))) +
-#   scale_fill_gradient2()
-#   
-# 
-# ## Heatmap of Event & shooterLeftRight
-# nhl_shots |> 
-#   filter(!is.na(shooterLeftRight)) |> 
-#   group_by(shooterLeftRight, event) |> 
-#   summarize(freq = n(),
-#             joint = n()/nrow(nhl_shots)) |> 
-#   ggplot(aes(x = shooterLeftRight, y = event)) +
-#   geom_tile(aes(fill = freq), color = "white") +
-#   geom_text(aes(label = scales::percent(joint, accuracy = 0.01))) +
-#   scale_fill_gradient2()
-# 
-# ## Histogram shot angle
-# nhl_shots |> 
-#   ggplot(aes(x = shotAngle)) +
-#   geom_histogram() +
-#   geom_rug(aes(color = shotAngle), alpha = 0.2)
+  scale_x_discrete(labels = c("Left", "Right")) +
+  labs(y = "Proportion",
+       x = "Shooter Handedness")
+
+# Chi square test shows this is statistically significant
+chisq.test(table(nhl_shots$shooterLeftRight))
+
 
 ## Shooter Handedness vs Shot Side ####
 
@@ -96,13 +33,13 @@ nhl_shots |>
   mutate(shotSide = 
            ifelse(shotAngle < 0, "left", "right")) |> 
   count(shooterLeftRight, shotSide) |> 
-  mutate(prop = n/sum(n)) |>
+  mutate(prop = n/sum(n), .by = shooterLeftRight) |>
   ggplot(aes(x = shooterLeftRight, y = prop, fill = shotSide)) +
   geom_col(position = "dodge") +
   labs(x = "Shooter Handedness", 
        y = "Proportion", 
        fill = "Shot Side",
-       title = "All Shots") +
+       title = "Shooter Handedness vs Shot Side (All Shots)") +
   theme_minimal()
 
 
@@ -111,27 +48,16 @@ nhl_shots |>
   mutate(shotSide = 
            ifelse(shotAngle < 0, "left", "right")) |> 
   count(shooterLeftRight, shotSide) |> 
-  mutate(prop = n/sum(n)) |>
+  mutate(prop = n/sum(n), .by = shooterLeftRight) |>
   ggplot(aes(x = shooterLeftRight, y = prop, fill = shotSide)) +
   geom_col(position = "dodge") +
   labs(x = "Shooter Handedness", 
        y = "Proportion", 
        fill = "Shot Side",
-       title = "Only Goals") +
+       title = "Shooter Handedness vs Shot Side (Only Goals)") +
   theme_minimal()
 
-
-
-nhl_shots |>
-  filter(!is.na(shooterLeftRight)) |> 
-  mutate(shotSide = 
-           ifelse(shotAngle < 0, "left", "right")) |> 
-  ggplot(aes(x = shooterLeftRight, fill = shotSide)) +
-  geom_bar(position = "stack") +
-  facet_wrap(~ event)
-
-
-
+## Facet Wrap Version of Bar Chart Above
 nhl_shots |>
   filter(!is.na(shooterLeftRight)) |> 
   mutate(shotSide = ifelse(shotAngle < 0, "left", "right")) |> 
@@ -164,38 +90,61 @@ nhl_shots |>
   ) +
   theme_minimal()
 
-## Do teams shoot differently depending on score differential?
-# shot frequency by score differential
-nhl_shots |>
-  mutate(score_diff = ifelse(isHomeTeam == 1,
-                             homeTeamGoals - awayTeamGoals,
-                             awayTeamGoals - homeTeamGoals)) |> 
-  filter(shotOnEmptyNet == 0) |>
-  group_by(score_diff) |>
-  summarise(total_shots = n()) |>
-  ggplot(aes(x = score_diff, y = total_shots)) +
-  geom_col() +
-  labs(
-    title = "Total Shots by Score Differential",
-    x = "Score Differential (Shooting Team Perspective)",
-    y = "Number of Shots"
-  ) +
-  theme_minimal()
 
-# shot disctance by score differential
-nhl_shots |>
-  mutate(score_diff = ifelse(isHomeTeam == 1,
-                             homeTeamGoals - awayTeamGoals,
-                             awayTeamGoals - homeTeamGoals)) |> 
-  filter(shotOnEmptyNet == 0) |>
-  ggplot(aes(x = factor(score_diff), y = shotDistance)) +
-  geom_boxplot() +
+## Shots vs Goals Per Game by Team (excluding empty net shots)
+nhl_shots |> 
+  filter(shotOnEmptyNet == 0) |> 
+  group_by(teamCode) |> 
+  summarise(numGames = n_distinct(game_id),
+            numShots = n(),
+            numGoals = sum(event == "GOAL", na.rm = TRUE),
+            shotspergame = numShots / numGames,
+            goalspergame = numGoals / numGames) |>
+  mutate(
+    madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                      "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                      "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
+  ggplot(aes(x = shotspergame, y = goalspergame)) +
+  geom_point(aes(color = madeplayoffs), size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dotted") +
+  scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
   labs(
-    title = "Shot Distance by Score Differential",
-    x = "Score Differential (Shooting Team Perspective)",
-    y = "Shot Distance (feet)"
+    title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
+    x = "Shots Per Game",
+    y = "Goals Per Game"
   ) +
-  theme_minimal()
+  theme_light()
+
+
+## Shots vs Goals Per Game by Team with TEAM LABEL
+nhl_shots |> 
+  filter(shotOnEmptyNet == 0) |> 
+  group_by(teamCode) |> 
+  summarise(numGames = n_distinct(game_id),
+            numShots = n(),
+            numGoals = sum(event == "GOAL", na.rm = TRUE),
+            shotspergame = numShots / numGames,
+            goalspergame = numGoals / numGames) |>
+  mutate(
+    madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
+  ggplot(aes(x = shotspergame, y = goalspergame)) +
+  geom_point() +
+  geom_hline(yintercept = 2.82, linetype = "dashed") +
+  geom_vline(xintercept = 42.40, linetype = "dashed") +
+  geom_label(aes(label = teamCode, color = madeplayoffs)) +
+  scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
+  labs(
+    title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
+    x = "Shots Per Game",
+    y = "Goals Per Game"
+  ) +
+  theme_light()
+
+
+## Shots made vs Shot Conceded (color by playoffs)
+
 
 
 library(sportyR)
@@ -203,3 +152,38 @@ library(sportyR)
 geom_hockey(league = "NHL") +
   geom_point(data = subset(nhl_shots, event == "GOAL" & shotOnEmptyNet == 0), 
              aes(x = arenaAdjustedXCord, y = arenaAdjustedYCord))
+
+
+## Do teams shoot differently depending on score differential?
+# shot frequency by score differential
+# nhl_shots |>
+#   mutate(score_diff = ifelse(isHomeTeam == 1,
+#                              homeTeamGoals - awayTeamGoals,
+#                              awayTeamGoals - homeTeamGoals)) |> 
+#   filter(shotOnEmptyNet == 0) |>
+#   group_by(score_diff) |>
+#   summarise(total_shots = n(),
+#             timeinscorediff = mean(time)) |> View()
+#   ggplot(aes(x = score_diff, y = total_shots)) +
+#   geom_col() +
+#   labs(
+#     title = "Total Shots by Score Differential",
+#     x = "Score Differential (Shooting Team Perspective)",
+#     y = "Number of Shots"
+#   ) +
+#   theme_minimal()
+# 
+# # shot distance by score differential
+# nhl_shots |>
+#   mutate(score_diff = ifelse(isHomeTeam == 1,
+#                              homeTeamGoals - awayTeamGoals,
+#                              awayTeamGoals - homeTeamGoals)) |> 
+#   filter(shotOnEmptyNet == 0) |>
+#   ggplot(aes(x = factor(score_diff), y = shotDistance)) +
+#   geom_boxplot() +
+#   labs(
+#     title = "Shot Distance by Score Differential",
+#     x = "Score Differential (Shooting Team Perspective)",
+#     y = "Shot Distance (feet)"
+#   ) +
+#   theme_minimal()
