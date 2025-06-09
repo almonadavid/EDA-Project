@@ -2,16 +2,8 @@ library(tidyverse)
 theme_set(theme_light())
 nhl_shots <- read_csv("https://raw.githubusercontent.com/36-SURE/2025/main/data/nhl_shots.csv")
 
-# Potential Questions:
-# Home Team Goals vs Away Team Goals
-# Shot by location/position
-# Shot angle
 
-# Question 1
-# Does shot angle influence goal likelihood, 
-# and does this relationship depend on shot type?
-
-## Bar chart showing Left shots vs Right shots
+## Bar chart showing shot handedness distribution
 nhl_shots |>
   filter(!is.na(shooterLeftRight)) |>
   count(shooterLeftRight) |>
