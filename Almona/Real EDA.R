@@ -120,7 +120,7 @@ nhl_shots |>
                                           "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(x = shotspergame, y = goalspergame)) +
   geom_point() +
-  geom_hline(yintercept = 2.82, linetype = "dashed") +
+  geom_hline(yintercept = mean(.$goalspergame), linetype = "dashed") +
   geom_vline(xintercept = 42.40, linetype = "dashed") +
   geom_label(aes(label = teamCode, color = madeplayoffs)) +
   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
