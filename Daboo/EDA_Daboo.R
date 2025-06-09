@@ -91,7 +91,7 @@ sog_stats<-nhl_shots_5v5|>
   summarise(total_shots=n(),
             shots_on_goal=sum(shotWasOnGoal==1, na.rm=TRUE),
             sog_pct=shots_on_goal/total_shots)|>
-  filter(total_shots>=20)
+  filter(total_shots>=50)
 
 # top 10 players only by sog_pct
 sog_stats|>
@@ -114,3 +114,42 @@ sog_stats|>
 sog_stats|>
   mutate(weighted_score=sog_pct * sqrt(total_shots))|>
   arrange(desc(weighted_score))
+
+sog_stats|>
+  ggplot(aes(sog_pct, shots_on_goal))+
+  geom_point()+
+  geom_text(aes(label=shooterName), size=3)
+
+## Looking at the most efficient teams shooting
+
+# creating the team shot on goal statistics
+sog_team_stats<- nhl_shots_5v5|>
+  group_by(teamCode)|>
+  summarise(total_shots=n(),
+            sog=sum(shotWasOnGoal==1, na.rm=TRUE),
+            sog_pct=100*(sog/total_shots), 
+            goals=sum(event=="GOAL"))
+
+# plotting sog_pct with sog, along with the number of goals and if the team made the playoffs
+sog_team_stats|>
+  mutate(
+    madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
+  mutate(goal_bin = case_when(
+    goals < 200 ~ "<200",
+    goals >= 200 & goals <= 250 ~ "200-250",
+    goals > 250 ~ ">250"
+  ), goal_bin=factor(goal_bin, levels=c("<200", "200-250", ">250")))|>
+  ggplot(aes(sog_pct, sog, size=goal_bin, color=madeplayoffs))+
+  geom_point(alpha=.5)+
+  geom_hline(yintercept=mean(sog_team_stats$sog), linetype="dashed", color="red")+
+  geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="blue")+
+  geom_text(aes(label=teamCode), vjust=-1, size=3)+
+  scale_color_manual(values=c("Yes"="blue", "No"="red"))+
+  scale_size_manual(values=c("<200"=2, "200-250"=4, ">250"=6))+
+  labs(x="SOG %", y="SOG", 
+       title="Shot Efficiency to Evaluate Goals and Whether a team made the playoffs", 
+       color="Made Playoffs",
+       size="Goals")
+  
