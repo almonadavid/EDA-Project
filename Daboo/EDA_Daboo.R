@@ -141,15 +141,36 @@ sog_team_stats|>
     goals >= 200 & goals <= 250 ~ "200-250",
     goals > 250 ~ ">250"
   ), goal_bin=factor(goal_bin, levels=c("<200", "200-250", ">250")))|>
-  ggplot(aes(sog_pct, sog, size=goal_bin, color=madeplayoffs))+
-  geom_point(alpha=.5)+
-  geom_hline(yintercept=mean(sog_team_stats$sog), linetype="dashed", color="red")+
+  ggplot(aes(sog_pct, total_shots))+
+  geom_point(alpha=.5, aes(size=goal_bin, color=madeplayoffs))+
+  geom_hline(yintercept=mean(sog_team_stats$total_shots), linetype="dashed", color="red")+
   geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="blue")+
   geom_text(aes(label=teamCode), vjust=-1, size=3)+
   scale_color_manual(values=c("Yes"="blue", "No"="red"))+
   scale_size_manual(values=c("<200"=2, "200-250"=4, ">250"=6))+
-  labs(x="SOG %", y="SOG", 
+  labs(x="SOG %", y="Total Shots", 
        title="Shot Efficiency to Evaluate Goals and Whether a team made the playoffs", 
        color="Made Playoffs",
-       size="Goals")
+       size="Goals")+
+  theme_light()+
+  theme(plot.title = element_text(hjust=.5, face="bold"))
+
+sog_team_stats|>
+  mutate(
+    madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
+  ggplot(aes(sog_pct, total_shots))+
+  geom_point(alpha=.5, aes(size=goals, color=madeplayoffs))+
+  geom_hline(yintercept=mean(sog_team_stats$total_shots), linetype="dashed", color="red")+
+  geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="blue")+
+  geom_text(aes(label=teamCode), vjust=-1, size=3)+
+  scale_color_manual(values=c("Yes"="blue", "No"="red"))+
+  scale_size_continuous(range=c(2, 10))+
+  labs(x="SOG %", y="Total Shots", 
+       title="Shot Efficiency to Evaluate Goals and Whether a team made the playoffs", 
+       color="Made Playoffs",
+       size="Goals")+
+  theme_light()+
+  theme(plot.title = element_text(hjust=.5, face="bold"))
   
