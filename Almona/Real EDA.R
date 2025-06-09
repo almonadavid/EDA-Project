@@ -1,4 +1,6 @@
 library(tidyverse)
+library(sportyR)
+library(ggplot2)
 theme_set(theme_light())
 nhl_shots <- read_csv("https://raw.githubusercontent.com/36-SURE/2025/main/data/nhl_shots.csv")
 
@@ -31,8 +33,7 @@ nhl_shots |>
   labs(x = "Shooter Handedness", 
        y = "Proportion", 
        fill = "Shot Side",
-       title = "Shooter Handedness vs Shot Side (All Shots)") +
-  theme_minimal()
+       title = "Shooter Handedness vs Shot Side (All Shots)")
 
 
 nhl_shots |>
@@ -46,8 +47,7 @@ nhl_shots |>
   labs(x = "Shooter Handedness", 
        y = "Proportion", 
        fill = "Shot Side",
-       title = "Shooter Handedness vs Shot Side (Only Goals)") +
-  theme_minimal()
+       title = "Shooter Handedness vs Shot Side (Only Goals)")
 
 ## Facet Wrap Version of Bar Chart Above
 nhl_shots |>
@@ -65,8 +65,7 @@ nhl_shots |>
     fill = "Shot Side",
     title = "Shot Side by Shooter Handedness (Proportions by Event)"
   ) +
-  scale_y_continuous(labels = scales::percent) +
-  theme_minimal()
+  scale_y_continuous(labels = scales::percent)
 
 
 ## Team code vs shot distance
@@ -79,8 +78,7 @@ nhl_shots |>
     title = "Shot Distance by Team (excluding empty net shots)",
     x = "Team",
     y = "Shot Distance (feet)"
-  ) +
-  theme_minimal()
+  )
 
 
 ## Shots vs Goals Per Game by Team (excluding empty net shots)
@@ -103,9 +101,8 @@ nhl_shots |>
   labs(
     title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
     x = "Shots Per Game",
-    y = "Goals Per Game"
-  ) +
-  theme_light()
+    y = "Goals Per Game",
+    color = "Made Playoffs?")
 
 
 ## Shots vs Goals Per Game by Team with TEAM LABEL
@@ -130,9 +127,8 @@ nhl_shots |>
   labs(
     title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
     x = "Shots Per Game",
-    y = "Goals Per Game"
-  ) +
-  theme_light()
+    y = "Goals Per Game",
+    color = "Made Playoffs?")
 
 
 ## Shots made vs Shot Conceded (color by playoffs)
@@ -159,15 +155,19 @@ nhl_shots |>
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dotted") +
   geom_label(aes(label = Team, color = madeplayoffs)) +
   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
-  theme_light()
+  labs(
+    title = "Shots Made vs Shots Conceded by Team",
+    x = "Shots Made",
+    y = "Goals Conceded",
+    color = "Made Playoffs?")
 
 
 
-library(sportyR)
-
+## sportyR package
 geom_hockey(league = "NHL") +
   geom_point(data = subset(nhl_shots, event == "GOAL" & shotOnEmptyNet == 0), 
              aes(x = arenaAdjustedXCord, y = arenaAdjustedYCord))
+
 
 
 ## Do teams shoot differently depending on score differential?
