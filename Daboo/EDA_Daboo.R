@@ -155,6 +155,7 @@ sog_team_stats|>
   theme_light()+
   theme(plot.title = element_text(hjust=.5, face="bold"))
 
+# plot but with the dot size for goals getting bigger, rather than on a set scale
 sog_team_stats|>
   mutate(
     madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
@@ -162,15 +163,26 @@ sog_team_stats|>
                                           "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(sog_pct, total_shots))+
   geom_point(alpha=.5, aes(size=goals, color=madeplayoffs))+
-  geom_hline(yintercept=mean(sog_team_stats$total_shots), linetype="dashed", color="red")+
-  geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="blue")+
+  geom_smooth(method="lm", se=FALSE, color="green")+
+  geom_hline(yintercept=mean(sog_team_stats$total_shots), linetype="dashed", color="orange")+
+  geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="purple")+
   geom_text(aes(label=teamCode), vjust=-1, size=3)+
   scale_color_manual(values=c("Yes"="blue", "No"="red"))+
   scale_size_continuous(range=c(2, 10))+
   labs(x="SOG %", y="Total Shots", 
        title="Shot Efficiency to Evaluate Goals and Whether a team made the playoffs", 
        color="Made Playoffs",
-       size="Goals")+
+       size="Goals", caption="Data from MoneyPuck.com")+
   theme_light()+
   theme(plot.title = element_text(hjust=.5, face="bold"))
+
+nhl_shots |>
+  filter(!is.na(arenaAdjustedXCord), !is.na(arenaAdjustedYCord), event == "GOAL") |>
+  ggplot(aes(arenaAdjustedXCord, arenaAdjustedYCord)) +
+  stat_density2d(aes(fill = ..level..), geom = "polygon", alpha = 0.6) +
+  scale_fill_viridis_c() +
+  coord_fixed() +
+  labs(title = "Goal Density Map", x = "X Coordinate", y = "Y Coordinate") +
+  theme_minimal()
+
   
