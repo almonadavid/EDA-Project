@@ -176,6 +176,56 @@ sog_team_stats|>
   theme_light()+
   theme(plot.title = element_text(hjust=.5, face="bold"))
 
+# manually changing the location of the teamCode labels to they are all visible
+sog_team_stats|>
+  mutate(
+    madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No"),
+  label_x=case_when(
+    teamCode=="PIT"~sog_pct+.25,
+    TRUE~sog_pct
+  ), 
+  label_y=case_when(
+    teamCode=="PIT"~total_shots+20,
+    TRUE~total_shots
+  )
+  )|>
+  ggplot(aes(sog_pct, total_shots))+
+  geom_point(alpha=.5, aes(size=goals, color=madeplayoffs))+
+  geom_smooth(method="lm", se=FALSE, color="green")+
+  geom_hline(yintercept=mean(sog_team_stats$total_shots), linetype="dashed", color="orange")+
+  geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="purple")+
+  geom_text(aes(x=label_x, y=label_y, label=teamCode), size=3)+
+  scale_color_manual(values=c("Yes"="blue", "No"="red"))+
+  scale_size_continuous(range=c(2, 10))+
+  labs(x="SOG %", y="Total Shots", 
+       title="Shot Efficiency to Evaluate Goals and Whether a team made the playoffs", 
+       color="Made Playoffs",
+       size="Goals", caption="Data from MoneyPuck.com")+
+  theme_light()+
+  theme(plot.title = element_text(hjust=.5, face="bold"))
+
+## Clustering Analysis
+
+# looking at the shape of variables to cluster
+#shotAngle
+nhl_shots|>
+  ggplot(aes(shotAngle))+
+  geom_histogram()
+# shotDistance
+nhl_shots|>
+  ggplot(aes(shotDistance))+
+  geom_histogram()
+
+# transforming shot distance to get it normally distributed
+nhl_shots|>
+  mutate(sqrt_shotDistance=sqrt(shotDistance))|>
+  ggplot(aes(sqrt_shotDistance))+
+  geom_histogram()
+
+
+# goal density map
 nhl_shots |>
   filter(!is.na(arenaAdjustedXCord), !is.na(arenaAdjustedYCord), event == "GOAL") |>
   ggplot(aes(arenaAdjustedXCord, arenaAdjustedYCord)) +
@@ -184,5 +234,6 @@ nhl_shots |>
   coord_fixed() +
   labs(title = "Goal Density Map", x = "X Coordinate", y = "Y Coordinate") +
   theme_minimal()
+
 
   
