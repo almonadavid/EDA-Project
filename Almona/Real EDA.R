@@ -14,7 +14,9 @@ nhl_shots |>
   geom_col(fill = "blue") +
   scale_x_discrete(labels = c("Left", "Right")) +
   labs(y = "Proportion",
-       x = "Shooter Handedness")
+       x = "Shooter Handedness",
+       caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 # Chi square test shows this is statistically significant
 chisq.test(table(nhl_shots$shooterLeftRight))
@@ -33,7 +35,9 @@ nhl_shots |>
   labs(x = "Shooter Handedness", 
        y = "Proportion", 
        fill = "Shot Side",
-       title = "Shooter Handedness vs Shot Side (All Shots)")
+       title = "Shooter Handedness vs Shot Side (All Shots)",
+       caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 
 nhl_shots |>
@@ -47,7 +51,9 @@ nhl_shots |>
   labs(x = "Shooter Handedness", 
        y = "Proportion", 
        fill = "Shot Side",
-       title = "Shooter Handedness vs Shot Side (Only Goals)")
+       title = "Shooter Handedness vs Shot Side (Only Goals)",
+       caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 ## Facet Wrap Version of Bar Chart Above
 nhl_shots |>
@@ -63,8 +69,9 @@ nhl_shots |>
     x = "Shooter Handedness", 
     y = "Proportion of Shots", 
     fill = "Shot Side",
-    title = "Shot Side by Shooter Handedness (Proportions by Event)"
-  ) +
+    title = "Shot Side by Shooter Handedness (Proportions by Event)",
+    caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic")) +
   scale_y_continuous(labels = scales::percent)
 
 
@@ -77,8 +84,9 @@ nhl_shots |>
   labs(
     title = "Shot Distance by Team (excluding empty net shots)",
     x = "Team",
-    y = "Shot Distance (feet)"
-  )
+    y = "Shot Distance (feet)",
+    caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 
 ## Shots vs Goals Per Game by Team (excluding empty net shots)
@@ -102,7 +110,9 @@ nhl_shots |>
     title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
     x = "Shots Per Game",
     y = "Goals Per Game",
-    color = "Made Playoffs?")
+    color = "Made Playoffs?",
+    caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 
 ## Shots vs Goals Per Game by Team with TEAM LABEL
@@ -120,7 +130,7 @@ nhl_shots |>
                                           "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(x = shotspergame, y = goalspergame)) +
   geom_point() +
-  geom_hline(yintercept = mean(.$goalspergame), linetype = "dashed") +
+  geom_hline(yintercept = 2.82, linetype = "dashed") +
   geom_vline(xintercept = 42.40, linetype = "dashed") +
   geom_label(aes(label = teamCode, color = madeplayoffs)) +
   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
@@ -128,7 +138,9 @@ nhl_shots |>
     title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
     x = "Shots Per Game",
     y = "Goals Per Game",
-    color = "Made Playoffs?")
+    color = "Made Playoffs?",
+    caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 
 ## Shots made vs Shot Conceded (color by playoffs)
@@ -159,7 +171,9 @@ nhl_shots |>
     title = "Shots Made vs Shots Conceded by Team",
     x = "Shots Made",
     y = "Goals Conceded",
-    color = "Made Playoffs?")
+    color = "Made Playoffs?",
+    caption = "Data courtesy of MoneyPuck.com.") +
+  theme(plot.caption = element_text(face = "italic"))
 
 
 
