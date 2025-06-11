@@ -94,7 +94,8 @@ final_data |>
     caption = "Data courtesy of MoneyPuck.com."
   ) +
   theme(plot.caption = element_text(face = "italic")) +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  ggthemes::scale_color_colorblind()
 
 
 ## Team code vs shot distance
@@ -125,8 +126,9 @@ nhl_shots |>
                                       "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
                                       "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(x = shotspergame, y = goalspergame)) +
-  geom_point(aes(color = madeplayoffs), size = 3) +
-  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dotted") +
+  geom_point(aes(color = madeplayoffs), size = 1) +
+  geom_hline(yintercept = 2.82, linetype = "dashed") +
+  geom_vline(xintercept = 42.40, linetype = "dashed") +
   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
   labs(
     title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
@@ -162,7 +164,8 @@ nhl_shots |>
     y = "Goals Per Game",
     color = "Made Playoffs?",
     caption = "Data courtesy of MoneyPuck.com.") +
-  theme(plot.caption = element_text(face = "italic"))
+  theme(plot.caption = element_text(face = "italic"),
+        legend.position = "bottom")
 
 
 ## Shots made vs Shot Conceded (color by playoffs)
