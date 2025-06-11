@@ -127,7 +127,17 @@ nhl_shots |>
     fill = "Event"
   )
 
-
+nhl_shots |>
+  filter(!is.na(event), !is.na(shotAngle)) |>
+  ggplot(aes(x = shotAngle, fill = event)) +
+  geom_density(alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title = "Density Plot of Shot Angle by Event",
+    x = "Shot Distance (feet)",
+    y = "Density",
+    fill = "Event"
+  )
 nhl_shots |>
   filter(!is.na(shotType), !is.na(shotDistance), !is.na(event)) |>
   group_by(event, shotType) |>
@@ -177,6 +187,28 @@ nhl_shots %>%
 library(tidyverse)
 theme_set(theme_light())
 library(dslabs)
+
+nhl_shots |> 
+  ggplot(aes(x = shotDistance)) + 
+  geom_histogram()
+  
+nhl_shots |> 
+  ggplot(aes(x = shotAngle) + 
+           geom_histogram()
+
+library(tidyverse)
+theme_set(theme_light())
+library(dslabs)
+
+# Histogram of shot distances
+nhl_shots |> 
+  ggplot(aes(x = shotDistance)) + 
+  geom_histogram()
+
+# Histogram of shot angles (fix: missing parenthesis)
+nhl_shots |> 
+  ggplot(aes(x = shotAngle)) + 
+  geom_histogram()
 
 # Cluster players by mean angle and distance
 player_cluster <- nhl_shots |>
@@ -232,5 +264,67 @@ player_cluster_with_stats <- player_cluster |>
 cluster_percentage <- player_cluster_with_stats |> 
   group_by(shot_clusters) |> 
   summarize(avg_shotperc_cluster = mean(shot_pct, na.rm = TRUE))
+
+
+#--------------------------------------------------------------------------------------------------
+
+
+
+library(tidyverse)
+theme_set(theme_light())
+library(dslabs)
+
+# Histogram of shot distances
+nhl_shots |> 
+  ggplot(aes(x = shotDistance)) + 
+  geom_histogram()
+
+# Histogram of shot angles
+nhl_shots |> 
+  ggplot(aes(x = shotAngle)) + 
+  geom_histogram()
+
+# Prepare shot-level data with cleaned variables
+shot_data <- nhl_shots |>
+  filter(!is.na(shotDistance), !is.na(shotAngle)) |>
+  mutate(
+    abs_shotAngle = abs(shotAngle),
+    std_angle = as.numeric(scale(abs_shotAngle)),
+    std_distance = as.numeric(scale(shotDistance))
+  )
+
+# K-means clustering on individual shots
+shot_kmeans <- shot_data |> 
+  select(std_angle, std_distance) |> 
+  kmeans(centers = 4, nstart = 30, algorithm = "Lloyd")
+
+# Add cluster labels to each shot
+shot_data <- shot_data |> 
+  mutate(shot_cluster = as.factor(shot_kmeans$cluster))
+
+# Plot clusters for individual shots
+ggplot(shot_data, aes(x = abs_shotAngle, y = shotDistance, color = shot_cluster)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  ggthemes::scale_color_colorblind() +
+  labs(
+    title = "Shot Clusters by Angle and Distance (Individual Shots)",
+    x = "Absolute Shot Angle",
+    y = "Shot Distance",
+    color = "Cluster"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Optional: Shot percentage by cluster (if keeping goal info)
+cluster_shot_stats <- shot_data |> 
+  group_by(shot_cluster) |> 
+  summarize(
+    total_shots = n(),
+    goals = sum(event == "GOAL", na.rm = TRUE),
+    shot_pct = goals / total_shots
+  )
+
+
+
 
 
