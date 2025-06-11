@@ -56,7 +56,7 @@ nhl_goals_reg_period_team<- nhl_goals_reg|>
 
 
 
-nhl_goals_5v5<- nhl_goals|>
+nhl_goals_with_goalie<- nhl_goals|>
   filter(period %in% c(1, 2, 3))|>
   filter(shotOnEmptyNet==0)
 
@@ -176,6 +176,56 @@ sog_team_stats|>
   theme_light()+
   theme(plot.title = element_text(hjust=.5, face="bold"))
 
+# manually changing the location of the teamCode labels to they are all visible
+sog_team_stats|>
+  mutate(
+    madeplayoffs = ifelse(teamCode %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No"),
+  label_x=case_when(
+    teamCode=="PIT"~sog_pct+.25,
+    TRUE~sog_pct
+  ), 
+  label_y=case_when(
+    teamCode=="PIT"~total_shots+20,
+    TRUE~total_shots
+  )
+  )|>
+  ggplot(aes(sog_pct, total_shots))+
+  geom_point(alpha=.5, aes(size=goals, color=madeplayoffs))+
+  geom_smooth(method="lm", se=FALSE, color="green")+
+  geom_hline(yintercept=mean(sog_team_stats$total_shots), linetype="dashed", color="orange")+
+  geom_vline(xintercept=mean(sog_team_stats$sog_pct), linetype="dashed", color="purple")+
+  geom_text(aes(x=label_x, y=label_y, label=teamCode), size=3)+
+  scale_color_manual(values=c("Yes"="blue", "No"="red"))+
+  scale_size_continuous(range=c(2, 10))+
+  labs(x="SOG %", y="Total Shots", 
+       title="Shot Efficiency to Evaluate Goals and Whether a team made the playoffs", 
+       color="Made Playoffs",
+       size="Goals", caption="Data from MoneyPuck.com")+
+  theme_light()+
+  theme(plot.title = element_text(hjust=.5, face="bold"))
+
+## Clustering Analysis
+
+# looking at the shape of variables to cluster
+#shotAngle
+nhl_shots|>
+  ggplot(aes(shotAngle))+
+  geom_histogram()
+# shotDistance
+nhl_shots|>
+  ggplot(aes(shotDistance))+
+  geom_histogram()
+
+# transforming shot distance to get it normally distributed
+nhl_shots|>
+  mutate(sqrt_shotDistance=sqrt(shotDistance))|>
+  ggplot(aes(sqrt_shotDistance))+
+  geom_histogram()
+
+
+# goal density map
 nhl_shots |>
   filter(!is.na(arenaAdjustedXCord), !is.na(arenaAdjustedYCord), event == "GOAL") |>
   ggplot(aes(arenaAdjustedXCord, arenaAdjustedYCord)) +
@@ -185,4 +235,122 @@ nhl_shots |>
   labs(title = "Goal Density Map", x = "X Coordinate", y = "Y Coordinate") +
   theme_minimal()
 
+# goals in regions of the ice
+nhl_goals_with_goalie|>
+  ggplot(aes(shotAngle))+
+  geom_histogram()
   
+nhl_goals_with_goalie|>
+  ggplot(aes(shotDistance))+
+  geom_histogram()
+
+nhl_goals_with_goalie|>
+  ggplot(aes(shotDistance))+
+  geom_boxplot()
+
+nhl_goals_with_goalie|>
+  summarise(max_distance=max(shotDistance), min_distance=min(shotDistance))
+
+# because shot distance is heabily skewed right, set manual bin widths shorter 
+# towards 0 feet, and farther widths larger than 0
+
+distance_bins<-c(0, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
+nhl_goals_with_goalie<-nhl_goals_with_goalie|>
+  mutate(distance_bin=cut(shotDistance, breaks=distance_bins, include.lowest=TRUE),
+         angle_bin=cut(shotAngle, breaks=seq(-90, 90, by=15), include.lowest=TRUE))
+angle_distance_counts<-nhl_goals_with_goalie|>
+  count(distance_bin, angle_bin)|>
+  mutate(props=n/sum(n))
+
+angle_distance_counts|>
+  ggplot(aes(distance_bin, angle_bin, fill=n))+
+  geom_tile(color="white")+
+  scale_fill_gradient(low="white", high="red")+
+  geom_text(aes(label=scales::percent(props, accuracy=.1)), size=3)+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+
+# best and worst goalies for 3.2% goal area
+nhl_shots|>
+  filter(shotDistance>5 & shotDistance<=10, shotAngle<=0 & shotAngle>-15, 
+         event %in% c("GOAL", "SHOT"))|>
+  group_by(goalieNameForShot) |>
+  summarise(total_shots=n(),
+            goals_allowed=sum(event=="GOAL"),
+            save_pct=1- goals_allowed/total_shots)|>
+  filter(total_shots>=10)|>
+  arrange(desc(save_pct))|>
+  arrange(save_pct)
+
+# best and worst goalies for 2.9% goal area
+nhl_shots|>
+  filter(shotDistance >5 & shotDistance<=10, shotAngle>30 & shotAngle<=45, 
+         event %in% c("GOAL", "SHOT"))|>
+  group_by(goalieNameForShot) |>
+  summarise(total_shots=n(),
+            goals_allowed=sum(event=="GOAL"),
+            save_pct=1- goals_allowed/total_shots)|>
+  filter(total_shots>=10)|>
+  arrange(desc(save_pct))|>
+  arrange(save_pct)
+
+# plotting for Tristan Jarry
+distance_bins <- c(0, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
+angle_bins <- seq(-90, 90, by = 15)
+goalie_bin_stats<-nhl_shots|>
+  filter(goalieNameForShot=="Tristan Jarry", event %in% c("GOAL", "SHOT"))|>
+  mutate(distance_bin=cut(shotDistance, breaks=distance_bins, include.lowest=TRUE),
+         angle_bin=cut(shotAngle, breaks=seq(-90, 90, by=15), include.lowest=TRUE))|>
+  group_by(distance_bin, angle_bin)|>
+  summarise(total_shots=n(),
+            goals_allowed=sum(event=="GOAL"),
+            save_pct=1- goals_allowed/total_shots)|>
+  ungroup()
+goalie_bin_stats|>
+  ggplot(aes(distance_bin, angle_bin, fill=save_pct))+
+  geom_tile(color="white")+
+  scale_fill_gradient(low="white", high="red")+
+  geom_text(aes(label=scales::percent(save_pct, accuracy=.1)), size=3)+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+
+# plotting Jarry's stats vs. league average
+distance_bins <- c(0, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
+angle_bins <- seq(-90, 90, by = 15)
+nhl_shots_binned<- nhl_shots|>
+  filter(event %in% c("GOAL", "SHOT"))|>
+  mutate(
+    distance_bin = cut(shotDistance, breaks = distance_bins, include.lowest = TRUE),
+    angle_bin = cut(shotAngle, breaks = angle_bins, include.lowest = TRUE)
+  )
+league_avg<-nhl_shots_binned|>
+  group_by(distance_bin, angle_bin)|>
+  summarise(
+    league_total = n(),
+    league_goals = sum(event == "GOAL"),
+    league_save_pct = 1 - league_goals / league_total)|>
+  ungroup()
+
+jarry_stats<-nhl_shots_binned|>
+  filter(goalieNameForShot=="Tristan Jarry")|>
+  group_by(distance_bin, angle_bin)|>
+  summarise(jarry_total=n(),
+            jarry_goals=sum(event=="GOAL"),
+            jarry_save_pct=1-jarry_goals/jarry_total)|>
+  ungroup()
+
+jarry_vs_league<-jarry_stats|>
+  inner_join(league_avg, by=c("distance_bin", "angle_bin"))|>
+  mutate(save_pct_diff=jarry_save_pct-league_save_pct)
+
+jarry_vs_league|>
+  ggplot(aes(distance_bin, angle_bin, fill=save_pct_diff))+
+  geom_tile(color="white")+
+  scale_fill_gradient(low="white", high="red")+
+  geom_text(aes(label=scales::percent(save_pct_diff, accuracy=.1)), size=3)+
+  labs(
+    title = paste("Save % Compared to League Avg for Tristan Jarry"),
+    x = "Distance Bin", y = "Angle Bin"
+  )+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
