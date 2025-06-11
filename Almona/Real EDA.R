@@ -56,21 +56,43 @@ nhl_shots |>
   theme(plot.caption = element_text(face = "italic"))
 
 ## Facet Wrap Version of Bar Chart Above
-nhl_shots |>
+# First, create a summary of GOAL events
+goal_summary <- nhl_shots |>
+  filter(!is.na(shooterLeftRight), event == "GOAL") |> 
+  mutate(shotSide = ifelse(shotAngle < 0, "left", "right")) |>
+  count(event, shooterLeftRight, shotSide)
+
+# Next, create a summary of TOTAL events by counting across all events
+total_summary <- nhl_shots |>
   filter(!is.na(shooterLeftRight)) |> 
-  mutate(shotSide = ifelse(shotAngle < 0, "left", "right")) |> 
-  count(event, shooterLeftRight, shotSide) |> 
-  group_by(event, shooterLeftRight) |> 
-  mutate(prop = n / sum(n)) |> 
+  mutate(shotSide = ifelse(shotAngle < 0, "left", "right")) |>
+  # Count by handedness and shot side, but NOT by event
+  count(shooterLeftRight, shotSide) |> 
+  # Manually add the 'event' column to label this data as "TOTAL"
+  mutate(event = "TOTAL")
+
+# Combine the two summaries into one dataframe
+final_data <- bind_rows(goal_summary, total_summary) |>
+  # Now, calculate the proportion within each group (GOAL and TOTAL)
+  group_by(event, shooterLeftRight) |>
+  mutate(prop = n / sum(n))
+
+
+# 2. --- Plotting ---
+
+# Pipe the final prepared data into ggplot
+final_data |>
   ggplot(aes(x = shooterLeftRight, y = prop, fill = shotSide)) +
   geom_col(position = "dodge") +
+  # Facet by the 'event' column, which now contains "GOAL" and "TOTAL"
   facet_wrap(~ event) +
   labs(
     x = "Shooter Handedness", 
-    y = "Proportion of Shots", 
+    y = "Proportion", 
     fill = "Shot Side",
-    title = "Shot Side by Shooter Handedness (Proportions by Event)",
-    caption = "Data courtesy of MoneyPuck.com.") +
+    title = "Proportion of Shots by Side for Goals vs. All Shots",
+    caption = "Data courtesy of MoneyPuck.com."
+  ) +
   theme(plot.caption = element_text(face = "italic")) +
   scale_y_continuous(labels = scales::percent)
 
