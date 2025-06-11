@@ -1,3 +1,5 @@
+## Plot for Slideshow starts on line 317
+
 
 # loading the data
 library(tidyverse)
@@ -315,14 +317,15 @@ goalie_bin_stats|>
   theme(axis.text.x=element_text(angle=45, hjust=1))
 
 # plotting Jarry's stats vs. league average
-distance_bins <- c(0, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100)
-angle_bins <- seq(-90, 90, by = 15)
+distance_bins <- c(0, 10, 20, 30, 50, 75, 100)
+angle_bins <- seq(-90, 90, by = 30)
 nhl_shots_binned<- nhl_shots|>
   filter(event %in% c("GOAL", "SHOT"))|>
   mutate(
     distance_bin = cut(shotDistance, breaks = distance_bins, include.lowest = TRUE),
     angle_bin = cut(shotAngle, breaks = angle_bins, include.lowest = TRUE)
   )
+
 league_avg<-nhl_shots_binned|>
   group_by(distance_bin, angle_bin)|>
   summarise(
@@ -342,15 +345,82 @@ jarry_stats<-nhl_shots_binned|>
 jarry_vs_league<-jarry_stats|>
   inner_join(league_avg, by=c("distance_bin", "angle_bin"))|>
   mutate(save_pct_diff=jarry_save_pct-league_save_pct)
+sum(jarry_vs_league$save_pct_diff)
 
 jarry_vs_league|>
+  mutate(text_color=ifelse(save_pct_diff>=0, "white", "black"))|>
   ggplot(aes(distance_bin, angle_bin, fill=save_pct_diff))+
   geom_tile(color="white")+
-  scale_fill_gradient(low="white", high="red")+
-  geom_text(aes(label=scales::percent(save_pct_diff, accuracy=.1)), size=3)+
+  scale_fill_viridis_c(name="Save % \nDifference", option="D", direction=-1)+
+  geom_text(aes(label=scales::percent(save_pct_diff, accuracy=.1),
+            color=text_color), size=3)+
+  scale_color_identity()+
+  geom_point(data=data.frame(distance_bin=1.5, angle_bin=3.5),
+             aes(distance_bin, angle_bin),
+             color="black", size=7, shape=21, fill="red")+
   labs(
-    title = paste("Save % Compared to League Avg for Tristan Jarry"),
-    x = "Distance Bin", y = "Angle Bin"
-  )+
+    title = paste("Save% Compared to the League Average for Tristan Jarry"),
+    x = "Distance Bin", y = "Angle Bin",
+    caption=paste0("Total Save% Difference: ",
+                   scales::percent(sum(jarry_vs_league$save_pct_diff, na.rm=TRUE)))
+    )+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=45, hjust=1))
+  theme(axis.text.x=element_text(angle=45, hjust=1), 
+        plot.caption = element_text(size=12))
+
+#plotting the best goalie in each bin
+distance_bins <- c(0, 10, 20, 30, 50, 75, 100)
+angle_bins <- seq(-90, 90, by = 30)
+nhl_shots_binned<- nhl_shots|>
+  filter(event %in% c("GOAL", "SHOT"))|>
+  mutate(
+    distance_bin = cut(shotDistance, breaks = distance_bins, include.lowest = TRUE),
+    angle_bin = cut(shotAngle, breaks = angle_bins, include.lowest = TRUE)
+  )
+save_pct_by_goalie<-nhl_shots_binned|>
+  group_by(goalieNameForShot, distance_bin, angle_bin)|>
+  summarise(shots=n(),
+            goals=sum(event=="GOAL"),
+            save_pct=1-(goals/shots))|>
+  filter(shots>=10)|>
+  ungroup()
+best_goalie_per_bin<-save_pct_by_goalie|>
+  group_by(distance_bin, angle_bin)|>
+  filter(save_pct==max(save_pct, na.rm=TRUE))|>
+  slice(1)|> # in case of ties
+  ungroup()
+
+# Create label with name and save_pct (e.g., "Hellebuyck\n0.932")
+best_goalie_per_bin <- best_goalie_per_bin |>
+  mutate(label = paste0(goalieNameForShot, "\n", round(100*save_pct, 3), "%"))  # newline between name and pct
+
+best_goalie_per_bin|>
+  ggplot(aes(distance_bin, angle_bin))+
+  geom_tile(aes(fill=save_pct), color="white")+
+  geom_text(aes(label=label), size=3)+
+  scale_fill_gradient(low="white", high="red", name="Save %")+
+  labs(title="Goalie with the Highest Save % Per Location",
+       x="Shot Distance",
+       y="Shot Angle")+
+  theme_minimal()
+
+# plotting the worst goalie in each bin
+worst_goalie_per_bin<-save_pct_by_goalie|>
+  group_by(distance_bin, angle_bin)|>
+  filter(save_pct==min(save_pct, na.rm=TRUE))|>
+  slice(1)|> # in case of ties
+  ungroup()
+
+# Create label with name and save_pct (e.g., "Hellebuyck\n0.932")
+worst_goalie_per_bin <- worst_goalie_per_bin |>
+  mutate(label = paste0(goalieNameForShot, "\n", round(100*save_pct, 3), "%"))  # newline between name and pct
+
+worst_goalie_per_bin|>
+  ggplot(aes(distance_bin, angle_bin))+
+  geom_tile(aes(fill=save_pct), color="white")+
+  geom_text(aes(label=label), size=3)+
+  scale_fill_gradient(low="white", high="red", name="Save %")+
+  labs(title="Goalie with the Highest Save % Per Location",
+       x="Shot Distance",
+       y="Shot Angle")+
+  theme_minimal()
