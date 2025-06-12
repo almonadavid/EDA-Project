@@ -126,7 +126,7 @@ nhl_shots |>
                                       "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
                                       "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(x = shotspergame, y = goalspergame)) +
-  geom_point(aes(color = madeplayoffs), size = 1) +
+  geom_point(aes(color = madeplayoffs), size = 3) +
   geom_hline(yintercept = 2.82, linetype = "dashed") +
   geom_vline(xintercept = 42.40, linetype = "dashed") +
   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
@@ -136,7 +136,8 @@ nhl_shots |>
     y = "Goals Per Game",
     color = "Made Playoffs?",
     caption = "Data courtesy of MoneyPuck.com.") +
-  theme(plot.caption = element_text(face = "italic"))
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.caption = element_text(face = "italic"))
 
 
 ## Shots vs Goals Per Game by Team with TEAM LABEL
@@ -164,7 +165,8 @@ nhl_shots |>
     y = "Goals Per Game",
     color = "Made Playoffs?",
     caption = "Data courtesy of MoneyPuck.com.") +
-  theme(plot.caption = element_text(face = "italic"),
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.caption = element_text(face = "italic"),
         legend.position = "bottom")
 
 
@@ -208,6 +210,21 @@ geom_hockey(league = "NHL") +
              aes(x = arenaAdjustedXCord, y = arenaAdjustedYCord))
 
 
+# Create rotated columns only where x is negative
+nhl_shots$plot_x <- ifelse(nhl_shots$arenaAdjustedXCord < 0,
+                           -nhl_shots$arenaAdjustedXCord,
+                           nhl_shots$arenaAdjustedXCord)
+
+nhl_shots$plot_y <- ifelse(nhl_shots$arenaAdjustedXCord < 0,
+                           -nhl_shots$arenaAdjustedYCord,
+                           nhl_shots$arenaAdjustedYCord)
+
+# Plot
+geom_hockey(league = "NHL") +
+  geom_point(data = subset(nhl_shots, event == "GOAL" & shotOnEmptyNet == 0), 
+             aes(x = plot_x, y = plot_y))
+
+
 
 ## Do teams shoot differently depending on score differential?
 # shot frequency by score differential
@@ -243,3 +260,77 @@ geom_hockey(league = "NHL") +
 #   ) +
 #   theme_minimal()
 
+library(dslabs)
+
+## clustering goalies
+goalie_summary <- nhl_shots |> 
+  filter(!is.na(goalieNameForShot)) |> 
+  group_by(goalieNameForShot) |> 
+  summarize(
+    shots_on_goal = sum(shotWasOnGoal == 1, na.rm = TRUE),
+    save_pct = 1 - (sum(event == "GOAL", na.rm = TRUE)/ shots_on_goal),
+    avg_shot_distance = mean(shotDistance, na.rm = TRUE),
+    rush_shot_pct = mean(shotRush, na.rm = TRUE),
+    rebound_shot_pct = mean(shotRebound, na.rm = TRUE)) |> 
+  filter(shots_on_goal >= 300) |> 
+  ungroup()
+
+goalie_scaled_data <- goalie_summary |>
+  select(save_pct, avg_shot_distance, rush_shot_pct, rebound_shot_pct) |>
+  scale()
+
+goalie_kmeans <- kmeans(goalie_scaled_data, centers = 4, nstart = 25)
+
+goalie_summary_clustered <- goalie_summary |>
+  mutate(cluster = factor(goalie_kmeans$cluster))
+
+goalie_summary_clustered |>
+  group_by(cluster) |>
+  summarise(
+    n_goalies = n(),
+    avg_save_pct = mean(save_pct),
+    avg_dist = mean(avg_shot_distance),
+    avg_rush_pct = mean(rush_shot_pct),
+    avg_rebound_pct = mean(rebound_shot_pct)
+  ) |>
+  arrange(avg_save_pct)
+
+goalie_summary_clustered |>
+  ggplot(aes(x = avg_shot_distance, y = save_pct, color = cluster)) +
+  geom_point(alpha = 0.8, size = 3) +
+  # Use ggrepel to add goalie names without them overlapping
+  # ggrepel::geom_text_repel(aes(label = goalieNameForShot), size = 3, max.overlaps = 5) +
+  ggrepel::geom_text_repel(aes(label = ifelse(goalieNameForShot == "Tristan Jarry", goalieNameForShot, NA)), size = 3) +
+  theme_minimal() +
+  ggthemes::scale_color_colorblind() +
+  labs(
+    title = "Goalie Clustering based on Workload and Performance",
+    subtitle = "Analyzing goalie archetypes in the NHL",
+    x = "Average Shot Distance Faced (Higher = 'Easier' Workload)",
+    y = "Save Percentage",
+    color = "Goalie Cluster"
+  )
+
+#######################################################
+
+cleaned_nhl_shots <- nhl_shots |> 
+  filter(!is.na(goalieNameForShot)) |> 
+  mutate(std_shotAngle = as.numeric(scale(shotAngle)),
+         std_shotDistance = as.numeric(scale(shotDistance))) |> 
+  drop_na()
+
+std_kmeans <- cleaned_nhl_shots |> 
+  group_by(goalieNameForShot) |> 
+  select(std_shotAngle, std_shotDistance) |> 
+  kmeans(algorithm = "Lloyd",
+         centers = 4,
+         nstart = 30)
+
+cleaned_nhl_shots |> 
+  mutate(cluster = factor(std_kmeans$cluster)) |> 
+  ggplot(aes(std_shotAngle, std_shotDistance,
+             color = cluster)) +
+  geom_point() +
+    ggthemes::scale_color_colorblind() +
+  scale_y_reverse()
+  
