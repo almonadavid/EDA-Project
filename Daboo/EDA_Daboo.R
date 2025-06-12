@@ -355,6 +355,7 @@ jarry_vs_league|>
   geom_text(aes(label=scales::percent(save_pct_diff, accuracy=.1),
             color=text_color), size=3)+
   scale_color_identity()+
+  scale_y_discrete(limits=rev)+
   geom_point(data=data.frame(distance_bin=1.5, angle_bin=3.5),
              aes(distance_bin, angle_bin),
              color="black", size=7, shape=21, fill="red")+
@@ -367,6 +368,70 @@ jarry_vs_league|>
   theme_minimal()+
   theme(axis.text.x=element_text(angle=45, hjust=1), 
         plot.caption = element_text(size=12))
+
+# plotting on an nhl_rink
+jarry_rink<-geom_hockey(league="NHL", display_range = "offense")
+get_bin_center<-function(bin_labels){
+  sapply(as.character(bin_labels), function(x) {
+    nums <- as.numeric(gsub("[^0-9.-]", "", unlist(strsplit(x, ","))))
+    if (length(nums) == 2) return(mean(nums))
+    else return(as.numeric(nums))  # fallback
+  })
+}
+  
+jarry_vs_league<-jarry_vs_league|>
+  mutate(dist_center=get_bin_center(distance_bin),
+         angle_center=get_bin_center(angle_bin),
+         theta_rad = angle_center * pi / 180,
+         x=89-(dist_center*cos(theta_rad)),
+         y=dist_center*sin(theta_rad))
+         
+jarry_rink+
+  geom_hex(data = jarry_vs_league, aes(x = x, y = y, fill = save_pct_diff), 
+            width = 8, height = 8, color = "white") +
+  scale_fill_viridis_c(name="Save %\nDifference", option="D", direction=-1) +
+  geom_text(data = jarry_vs_league, 
+            aes(x = x, y = y, 
+                label = scales::percent(save_pct_diff, accuracy = 0.1),
+                color = ifelse(save_pct_diff >= 0, "white", "black")),
+            size = 3) +
+  scale_color_identity() +
+  labs(
+    title = "Save% Compared to League Average for Tristan Jarry",
+    caption = paste0("Total Save% Difference: ",
+                     scales::percent(sum(jarry_vs_league$save_pct_diff, na.rm = TRUE)))
+  ) +
+  theme_minimal()
+
+# plotting all of the shots taken on Tristan Jarry
+shots_on_jarry<-nhl_shots|>
+  filter(goalieNameForShot=="Tristan Jarry", event %in% c("GOAL", "SHOT"))|>
+  mutate(x=abs(arenaAdjustedXCord), y=arenaAdjustedYCord)
+
+goals_on_jarry<-shots_on_jarry|>
+  filter(event %in%c("GOAL"))
+         
+ozone_rink<-geom_hockey(league="NHL", display_range="offense")
+ozone_rink+
+  geom_point(data=shots_on_jarry, aes(x, y, color=event))
+# plotting all of the goals on Jarry
+jarry_goals<-ozone_rink+
+  geom_hex(data=goals_on_jarry, aes(x, y), binwidth=c(5,5), alpha=.8)+
+  scale_fill_gradient(low="midnightblue", high="red")+
+  labs(title="Goals Given up by Tristan Jarry")
+
+nhl_goals<-nhl_goals|>
+  mutate(x=abs(arenaAdjustedXCord), y=arenaAdjustedYCord)
+
+# plotting all of the goals in the NHL
+league_goals<-ozone_rink+
+  geom_hex(data=nhl_goals, aes(x=x, y=y), binwidth=c(5,5), alpha=.8)+
+  scale_fill_gradient(low="midnightblue", high="red")+
+  labs(title="Goals Given up by all NHL Goalies")
+
+library(patchwork)
+# combining the two plots
+jarry_goals + league_goals + plot_layout(guides="collect")
 
 #plotting the best goalie in each bin
 distance_bins <- c(0, 10, 20, 30, 50, 75, 100)
