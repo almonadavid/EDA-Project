@@ -325,6 +325,67 @@ cluster_shot_stats <- shot_data |>
   )
 
 
+#Making a hockey rink, this not correct lol
+library(sportyR)
+
+?geom_hockey
+
+
+library(ggplot2)
+library(sportyR)  
+library(dplyr)
+library(ggthemes)
+
+# Step 1: Prepare and cluster the player data
+player_cluster <- nhl_shots |>
+  mutate(abs_shotAngle = abs(shotAngle)) |>
+  group_by(shooterName) |> 
+  summarize(
+    meanangle = mean(abs_shotAngle, na.rm = TRUE), 
+    meandistance = mean(shotDistance, na.rm = TRUE)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    std_meanangle = as.numeric(scale(meanangle)),
+    std_meandistance = as.numeric(scale(meandistance))
+  )
+
+# Step 2: Run K-means on standardized values
+set.seed(47)
+shots_kmeans <- player_cluster |> 
+  select(std_meanangle, std_meandistance) |> 
+  kmeans(centers = 4, nstart = 30)
+
+# Step 3: Add cluster assignments
+player_cluster <- player_cluster |> 
+  mutate(shot_clusters = as.factor(shots_kmeans$cluster))
+
+# Step 4: Convert polar to Cartesian for rink overlay
+plotrinkdata <- player_cluster |>
+  # filter (shooterName ==
+  #           "Igor Shesterkin" ) |>
+  mutate(
+    angle_rad = meanangle * pi / 180,
+    x = meandistance * cos(angle_rad),
+    y = meandistance * sin(angle_rad)
+  )
+
+# Step 5: Build plot
+base_rink_plot <- geom_hockey(league = "NHL", display_range = "offensive")
+
+base_rink_plot +
+  geom_point(
+    data = plotrinkdata,
+    aes(x = x-90, y = y, color = shot_clusters),
+    size = 3, alpha = .6
+  ) +
+  ggthemes::scale_color_colorblind() +
+  coord_fixed(xlim = c(-100, -20)) +
+  theme_void() +
+  labs(
+    title = "Clustered Player Shot Tendencies on NHL Rink",
+    color = "Cluster"
+  )
 
 
 
