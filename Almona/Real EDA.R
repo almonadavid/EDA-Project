@@ -219,7 +219,7 @@ nhl_shots$plot_y <- ifelse(nhl_shots$arenaAdjustedXCord < 0,
                            -nhl_shots$arenaAdjustedYCord,
                            nhl_shots$arenaAdjustedYCord)
 
-# Plot
+# Plot #
 geom_hockey(league = "NHL") +
   geom_point(data = subset(nhl_shots, event == "GOAL" & shotOnEmptyNet == 0), 
              aes(x = plot_x, y = plot_y))
