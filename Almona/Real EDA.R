@@ -170,7 +170,6 @@ nhl_shots |>
     color = "Made Playoffs?") +
     #caption = "Data courtesy of MoneyPuck.com.") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-        plot.caption = element_text(face = "italic"),
         axis.title.x = element_text(size = 14),
         axis.title.y = element_text(size = 14),
         legend.title = element_text(size = 14),
