@@ -404,7 +404,8 @@ jarry_rink+
 # plotting all of the shots taken on Tristan Jarry
 shots_on_jarry<-nhl_shots|>
   filter(goalieNameForShot=="Tristan Jarry", event %in% c("GOAL", "SHOT"))|>
-  mutate(x=abs(arenaAdjustedXCord), y=arenaAdjustedYCord)
+  mutate(x=abs(arenaAdjustedXCord), y=ifelse(
+    arenaAdjustedXCord<0, -arenaAdjustedYCord, arenaAdjustedYCord))
 
 goals_on_jarry<-shots_on_jarry|>
   filter(event %in%c("GOAL"))
@@ -419,7 +420,8 @@ jarry_goals<-ozone_rink+
   labs(title="Goals Given up by Tristan Jarry")
 
 nhl_goals<-nhl_goals|>
-  mutate(x=abs(arenaAdjustedXCord), y=arenaAdjustedYCord)
+  mutate(x=abs(arenaAdjustedXCord), y=ifelse(
+    arenaAdjustedXCord<0, -arenaAdjustedYCord, arenaAdjustedYCord))
 
 # plotting all of the goals in the NHL
 league_goals<-ozone_rink+
@@ -427,7 +429,16 @@ league_goals<-ozone_rink+
   scale_fill_gradient(low="midnightblue", high="red")+
   labs(title="Goals Given up by all NHL Goalies")
 
+# plotting goals against Hellebuyck
+goals_on_helly<-nhl_goals|>
+  filter(goalieNameForShot=="Connor Hellebuyck")
+helly_goals<-ozone_rink+
+  geom_hex(data=goals_on_helly, aes(x, y), binwidth=c(5,5), alpha=.8)+
+  scale_fill_gradient(low="midnightblue", high="red")+
+  labs(title="Goals Given up by Connor Hellebuyck")
+  
+
 library(patchwork)
 # combining the two plots
 jarry_goals + league_goals + plot_layout(guides="collect")
-
+jarry_goals+helly_goals+plot_layout(guides="collect")
