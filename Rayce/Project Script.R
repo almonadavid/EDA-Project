@@ -235,16 +235,20 @@ player_cluster <- player_cluster |>
 
 # Plot clusters
 ggplot(player_cluster, aes(x = meanangle, y = meandistance, color = shot_clusters)) +
-  geom_point(size = 4, alpha = 0.7) + 
+  geom_point(size = 4, alpha = 0.8) + 
   ggthemes::scale_color_colorblind() +
   labs(
-    title = "Shot Clusters by Angle and Distance for Individual Players",
+    #title = "Shot Clusters by Angle and Distance for Individual Players",
     x = "Mean Absolute Shot Angle",
     y = "Mean Shot Distance",
     color = "Cluster"
   ) +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+  theme_light() +
+  theme(legend.position = "bottom",
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 
 # Calculate shooting percentages
 player_shot_pct <- nhl_shots |>
@@ -307,13 +311,17 @@ ggplot(shot_data, aes(x = abs_shotAngle, y = shotDistance, color = shot_cluster)
   geom_point(alpha = 0.5, size = 1.5) +
   ggthemes::scale_color_colorblind() +
   labs(
-    title = "Shot Clusters by Angle and Distance (Individual Shots)",
+    #title = "Shot Clusters by Angle and Distance (Individual Shots)",
     x = "Absolute Shot Angle",
     y = "Shot Distance",
     color = "Cluster"
   ) +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+  theme_light() +
+  theme(legend.position = "bottom",
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
 
 # Optional: Shot percentage by cluster (if keeping goal info)
 cluster_shot_stats <- shot_data |> 
@@ -383,8 +391,14 @@ base_rink_plot +
   coord_fixed(xlim = c(-100, -20)) +
   theme_void() +
   labs(
-    title = "Clustered Player Shot Tendencies on NHL Rink",
+    #title = "Clustered Player Shot Tendencies on NHL Rink",
     color = "Cluster"
+  ) +
+  theme(
+    #legend.position = "bottom",
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12)
+    
   )
 
 
