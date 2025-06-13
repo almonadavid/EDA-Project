@@ -1,6 +1,7 @@
 library(tidyverse)
 library(sportyR)
 library(ggplot2)
+library(ggrepel)
 theme_set(theme_light())
 nhl_shots <- read_csv("https://raw.githubusercontent.com/36-SURE/2025/main/data/nhl_shots.csv")
 
@@ -126,18 +127,21 @@ nhl_shots |>
                                       "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
                                       "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(x = shotspergame, y = goalspergame)) +
-  geom_point(aes(color = madeplayoffs), size = 3) +
-  geom_hline(yintercept = 2.82, linetype = "dashed") +
-  geom_vline(xintercept = 42.40, linetype = "dashed") +
-  scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
+  geom_point(size = 3) + #aes(color = madeplayoffs),
+  geom_smooth(method = "lm", se = FALSE) +
+  #geom_hline(yintercept = 2.82, linetype = "dashed") +
+  #geom_vline(xintercept = 42.40, linetype = "dashed") +
+  #scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
   labs(
-    title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
+    #title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
     x = "Shots Per Game",
     y = "Goals Per Game",
-    color = "Made Playoffs?",
-    caption = "Data courtesy of MoneyPuck.com.") +
+    color = "Made Playoffs?") +
+    #caption = "Data courtesy of MoneyPuck.com.") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-        plot.caption = element_text(face = "italic"))
+        plot.caption = element_text(face = "italic"),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14))
 
 
 ## Shots vs Goals Per Game by Team with TEAM LABEL
@@ -154,53 +158,56 @@ nhl_shots |>
                                           "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
                                           "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
   ggplot(aes(x = shotspergame, y = goalspergame)) +
-  geom_point() +
+  geom_point(aes(color = madeplayoffs), size = 3) +
   geom_hline(yintercept = 2.82, linetype = "dashed") +
   geom_vline(xintercept = 42.40, linetype = "dashed") +
-  geom_label(aes(label = teamCode, color = madeplayoffs)) +
+  geom_label_repel(aes(label = teamCode, color = madeplayoffs)) +
   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
   labs(
-    title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
+    #title = "Shots vs Goals Per Game by Team (excluding empty net shots)",
     x = "Shots Per Game",
     y = "Goals Per Game",
-    color = "Made Playoffs?",
-    caption = "Data courtesy of MoneyPuck.com.") +
+    color = "Made Playoffs?") +
+    #caption = "Data courtesy of MoneyPuck.com.") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.caption = element_text(face = "italic"),
-        legend.position = "bottom")
-
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        legend.justification = c("right", "top"))
 
 ## Shots made vs Shot Conceded (color by playoffs)
-nhl_shots |>
-  group_by(game_id, homeTeamCode, awayTeamCode, isHomeTeam) |>
-  summarise(shots = n(), .groups = "drop") |>
-  pivot_wider(
-    names_from = isHomeTeam,
-    values_from = shots,
-    names_prefix = "shots_") |>
-  rename(homeShots = shots_1,
-         awayShots = shots_0) |> 
-  select(game_id, homeTeamCode, awayTeamCode, homeShots, awayShots) |>
-  group_by(homeTeamCode) |> 
-  summarise(shotsMade = sum(homeShots, na.rm = TRUE),
-            shotsConceded = sum(awayShots, na.rm = TRUE)) |> 
-  rename(Team = homeTeamCode) |> 
-  mutate(
-    madeplayoffs = ifelse(Team %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
-                                          "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
-                                          "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
-  ggplot(aes(x = shotsMade, y = shotsConceded)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dotted") +
-  geom_label(aes(label = Team, color = madeplayoffs)) +
-  scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
-  labs(
-    title = "Shots Made vs Shots Conceded by Team",
-    x = "Shots Made",
-    y = "Goals Conceded",
-    color = "Made Playoffs?",
-    caption = "Data courtesy of MoneyPuck.com.") +
-  theme(plot.caption = element_text(face = "italic"))
+# nhl_shots |>
+#   group_by(game_id, homeTeamCode, awayTeamCode, isHomeTeam) |>
+#   summarise(shots = n(), .groups = "drop") |>
+#   pivot_wider(
+#     names_from = isHomeTeam,
+#     values_from = shots,
+#     names_prefix = "shots_") |>
+#   rename(homeShots = shots_1,
+#          awayShots = shots_0) |> 
+#   select(game_id, homeTeamCode, awayTeamCode, homeShots, awayShots) |>
+#   group_by(homeTeamCode) |> 
+#   summarise(shotsMade = sum(homeShots, na.rm = TRUE),
+#             shotsConceded = sum(awayShots, na.rm = TRUE)) |> 
+#   rename(Team = homeTeamCode) |> 
+#   mutate(
+#     madeplayoffs = ifelse(Team %in% c("TOR", "TBL", "FLA", "OTT", "MTL", "WSH",
+#                                           "CAR", "NJD", "WPG", "DAL", "COL", "MIN",
+#                                           "STL", "VGK", "LAK", "EDM"), "Yes", "No")) |>
+#   ggplot(aes(x = shotsMade, y = shotsConceded)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dotted") +
+#   geom_label(aes(label = Team, color = madeplayoffs)) +
+#   scale_color_manual(values = c("Yes" = "blue", "No" = "red")) +
+#   labs(
+#     title = "Shots Made vs Shots Conceded by Team",
+#     x = "Shots Made",
+#     y = "Goals Conceded",
+#     color = "Made Playoffs?",
+#     caption = "Data courtesy of MoneyPuck.com.") +
+#   theme(plot.caption = element_text(face = "italic"))
 
 
 
