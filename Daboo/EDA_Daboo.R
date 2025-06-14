@@ -446,9 +446,14 @@ save_pct_helly<-ozone_rink+
   scale_fill_gradient(low="midnightblue", high="red", break)
 save_pct_helly
 
+library(viridis)
+library(ggplot2)
+library(tidyverse)
+library(sportyR)
+
 shared_fill<-scale_fill_viridis_c(
-  limits=c(0,8),
-  breaks=c(2, 4, 6, 8),
+  limits=c(0,10),
+  breaks=c(2, 4, 6, 8, 10),
   name="Goals Allowed",
   guide = guide_colorbar(direction = "horizontal")
 )
@@ -464,7 +469,7 @@ goals_on_helly<-nhl_goals|>
   filter(goalieNameForShot=="Connor Hellebuyck")
 
 helly_goals<-ozone_rink+
-  geom_hex(data=goals_on_helly, aes(x, y), binwidth=c(8,8), alpha=.7)+
+  geom_hex(data=goals_on_helly, aes(x, y), binwidth=c(7,7), alpha=.7)+
   shared_fill+
   labs(title="Connor Hellebuyck")+
   shared_theme
@@ -473,7 +478,7 @@ goals_on_jarry<-shots_on_jarry|>
   filter(event %in%c("GOAL"))
 
 jarry_goals<-ozone_rink+
-  geom_hex(data=goals_on_jarry, aes(x, y), binwidth=c(8,8), alpha=.7)+
+  geom_hex(data=goals_on_jarry, aes(x, y), binwidth=c(7,7), alpha=.7)+
   shared_fill+
   labs(title="Tristan Jarry")+
   shared_theme
@@ -482,7 +487,7 @@ goals_on_ned<-nhl_goals|>
   filter(goalieNameForShot=="Alex Nedeljkovic")
 
 ned_goals<-ozone_rink+
-  geom_hex(data=goals_on_ned, aes(x, y), binwidth=c(8,8), alpha=.7)+
+  geom_hex(data=goals_on_ned, aes(x, y), binwidth=c(7,7), alpha=.7)+
   shared_fill+
   labs(title="Alex Nedeljkovic")+
   shared_theme
