@@ -454,15 +454,17 @@ shared_fill<-scale_fill_viridis_c(
 )
 
 shared_theme<-theme(
+  title=element_text(size=15, hjust=.5),
   legend.position="bottom",
-  legend.title=element_text(size=14)
+  legend.title=element_text(size=20, vjust=.9),
+  legend.text=element_text(size=15)
 )
 
 goals_on_helly<-nhl_goals|>
   filter(goalieNameForShot=="Connor Hellebuyck")
 
 helly_goals<-ozone_rink+
-  geom_hex(data=goals_on_helly, aes(x, y), binwidth=c(5,5), alpha=.8)+
+  geom_hex(data=goals_on_helly, aes(x, y), binwidth=c(8,8), alpha=.7)+
   shared_fill+
   labs(title="Connor Hellebuyck")+
   shared_theme
@@ -471,7 +473,7 @@ goals_on_jarry<-shots_on_jarry|>
   filter(event %in%c("GOAL"))
 
 jarry_goals<-ozone_rink+
-  geom_hex(data=goals_on_jarry, aes(x, y), binwidth=c(5,5), alpha=.8)+
+  geom_hex(data=goals_on_jarry, aes(x, y), binwidth=c(8,8), alpha=.7)+
   shared_fill+
   labs(title="Tristan Jarry")+
   shared_theme
@@ -480,7 +482,7 @@ goals_on_ned<-nhl_goals|>
   filter(goalieNameForShot=="Alex Nedeljkovic")
 
 ned_goals<-ozone_rink+
-  geom_hex(data=goals_on_ned, aes(x, y), binwidth=c(5,5), alpha=.8)+
+  geom_hex(data=goals_on_ned, aes(x, y), binwidth=c(8,8), alpha=.7)+
   shared_fill+
   labs(title="Alex Nedeljkovic")+
   shared_theme
@@ -490,9 +492,10 @@ library(patchwork)
 final_plot<-jarry_goals+ned_goals+helly_goals+
   plot_layout(guides="collect")+
   plot_annotation(title="Goal Heatmaps for the Goalies in Question",
-  theme=theme(legend.position="bottom",
-              legend.title=element_text(size=14),
-              plot.title=element_text(face="bold", hjust=.5)))
+  theme=theme(title=element_text(size=15, hjust=.5),
+              legend.position="bottom",
+              legend.title=element_text(size=20, vjust=.9),
+              plot.title=element_text(face="bold", hjust=.5, size=28)))
 final_plot
 
 # creating a data set of goalie statistics of those who faced more than 100 shots
@@ -504,23 +507,22 @@ goalie_stats<-nhl_shots|>
             goals=sum(event=="GOAL"), 
             save_pct=1-(goals/total_shots),
             rebound_pct=sum(shotGeneratedRebound==1)/total_shots,
-            freeze_pct=sum(shotGoalieFroze==1)/total_shots)|>
-  filter(total_shots>715)
+            freeze_pct=sum(shotGoalieFroze==1)/total_shots)
 
 goalie_stats|>
   summarise(sum(total_shots)/103)
 
 goalie_stats<-goalie_stats|>
-  filter(total_shots>715)
+  filter(total_shots>500)
 
 goalie_stats|>
-  slice_max(save_pct, n=48)|>
-  print(n=48)
+  slice_max(save_pct, n=62)|>
+  print(n=62)
 
 goalie_stats|>
-  slice_min(rebound_pct, n=48)|>
-  print(n=48)
+  slice_min(rebound_pct, n=62)|>
+  print(n=62)
 
 goalie_stats|>
-  slice_max(freeze_pct, n=48)|>
-  print(n=48)
+  slice_max(freeze_pct, n=62)|>
+  print(n=62)
